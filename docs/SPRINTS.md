@@ -11,7 +11,7 @@
 | `src/data/database.js` | SQLite database layer |
 | `src/data/contacts.js` | Excel contact loader |
 
-## Sprint 2 — The Bot ⬜
+## Sprint 2 — The Bot ✅
 **Goal:** Build the WhatsApp connection and automation logic.
 
 | File | Description |
