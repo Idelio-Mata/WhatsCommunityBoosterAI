@@ -9,12 +9,7 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const config = require('../../config/config');
-const {
-  getDashboardStats,
-  getRecentActivity,
-  getAllContacts,
-} = require('../data/database');
-
+const apiRouter = require("../api/index");
 /**
  * Middleware de autenticação básica.
  *
@@ -28,17 +23,17 @@ const {
  * @param {import('express').NextFunction} next
  */
 function basicAuth(req, res, next) {
-  const authHeader = req.headers['authorization'];
+  const authHeader = req.headers["authorization"];
   if (!authHeader) {
-    res.set('WWW-Authenticate', 'Basic realm="Dashboard"');
-    return res.status(401).send('Autenticação necessária');
+    res.set("WWW-Authenticate", 'Basic realm="Dashboard"');
+    return res.status(401).send("Autenticação necessária");
   }
-  const token = authHeader.split(' ')[1] || '';
-  const decoded = Buffer.from(token, 'base64').toString('utf8');
+  const token = authHeader.split(" ")[1] || "";
+  const decoded = Buffer.from(token, "base64").toString("utf8");
   // O formato esperado é "username:password"; ignoramos o username.
-  const password = decoded.split(':')[1] || '';
+  const password = decoded.split(":")[1] || "";
   if (password !== config.DASHBOARD_PASSWORD) {
-    return res.status(403).send('Senha incorreta');
+    return res.status(403).send("Senha incorreta");
   }
   next();
 }
@@ -54,49 +49,16 @@ async function startDashboard() {
   app.use(basicAuth);
 
   // Rotas da API
-  app.get('/api/stats', async (req, res) => {
-    try {
-      const stats = await getDashboardStats();
-      res.json(stats);
-    } catch (err) {
-      logger.error({err},'Erro ao obter stats do dashboard');
-      res.status(500).json({ error: 'Erro interno' });
-    }
-  });
-
-  app.get('/api/activity', async (req, res) => {
-    const limit = parseInt(req.query.limit, 10) || 50;
-    try {
-      const activity = await getRecentActivity(limit);
-      res.json(activity);
-    } catch (err) {
-      logger.error({err},'Erro ao obter atividade recente');
-      res.status(500).json({ error: 'Erro interno' });
-    }
-  });
-
-  app.get('/api/contacts', async (req, res) => {
-    const limit = parseInt(req.query.limit, 10) || 100;
-    try {
-      const contacts = await getAllContacts(limit);
-      res.json(contacts);
-    } catch (err) {
-      logger.error({err},'Erro ao obter contactos');
-      res.status(500).json({ error: 'Erro interno' });
-    }
-  });
+  app.use("/api", apiRouter);
 
   // Página principal do dashboard
-  app.get('/', async (req, res) => {
+  app.get("/", async (req, res) => {
     try {
-      const stats = await getDashboardStats();
-      const activity = await getRecentActivity(50);
-      const contacts = await getAllContacts(100);
-      const html = generateDashboardHtml(stats, activity, contacts);
+      const html = generateDashboardHtml();
       res.send(html);
     } catch (err) {
-      logger.error({err},'Erro ao renderizar dashboard');
-      res.status(500).send('Erro interno');
+      logger.error({ err }, "Erro ao renderizar dashboard");
+      res.status(500).send("Erro interno");
     }
   });
 
@@ -106,22 +68,19 @@ async function startDashboard() {
         logger.info(`Dashboard iniciado na porta ${config.DASHBOARD_PORT}`);
         resolve(server);
       })
-      .on('error', (err) => {
-        logger.error({err},'Falha ao iniciar o dashboard');
+      .on("error", (err) => {
+        logger.error({ err }, "Falha ao iniciar o dashboard");
         reject(err);
-      });   
+      });
   });
 }
 
 /**
  * Gera o HTML completo do dashboard com estilos inline.
  *
- * @param {object} stats
- * @param {Array} activity
- * @param {Array} contacts
  * @returns {string}
  */
-function generateDashboardHtml(stats, activity, contacts) {
+function generateDashboardHtml() {
   const style = `
     body { background:#0a0a0a; color:#fff; font-family:Arial,Helvetica,sans-serif; margin:0; padding:0; }
     .header { padding:20px; text-align:center; background:#075e54; position:relative; }
