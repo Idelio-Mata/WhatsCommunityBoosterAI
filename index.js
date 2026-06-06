@@ -24,11 +24,11 @@ const { startScheduler } = require('./src/bot/scheduler');
  */
 async function main() {
   // Log bot name and version
-  logger.info('WhatsCommunityBoosterAI v1.0.0 starting');
+  logger.info("WhatsCommunityBoosterAI v1.0.0 starting");
 
   // Initialise the database
   await initDatabase();
-  logger.info('Database initialised successfully');
+  logger.info("Database initialised successfully");
 
   // Start the dashboard server
   const dashboardServer = await startDashboard();
@@ -37,13 +37,26 @@ async function main() {
 
   // Connect to WhatsApp
   const sock = await connectWhatsApp();
-  logger.info('WhatsApp connection established');
+  logger.info("WhatsApp connection established");
 
   // Start the scheduler
   startScheduler();
-  logger.info('Scheduler started successfully');
+  logger.info("Scheduler started successfully");
 
-  logger.info('Bot is running and ready');
+  // Bot is ready
+  const os = require("os");
+  const interfaces = os.networkInterfaces();
+  const allAddresses = Object.values(interfaces)
+    .flat()
+    .filter((i) => !i.internal);
+
+  const ipv4 = allAddresses.find((i) => i.family === "IPv4")?.address;
+  const ipv6 = allAddresses.find((i) => i.family === "IPv6")?.address;
+  const localIp = ipv4 || ipv6 || "localhost";
+
+  logger.info(
+    `Bot is running and ready — Dashboard: http://${localIp}:${config.DASHBOARD_PORT}`,
+  );
 }
 
 // Graceful shutdown handling
