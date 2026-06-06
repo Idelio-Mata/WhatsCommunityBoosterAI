@@ -27,26 +27,25 @@ const groupMap = new Map();
  */
 async function fetchGroups(sock) {
     try {
-        const sock = getSocket();
-        const groups = await sock.groupFetchAllParticipating();
-        // groups is an object where each key is a JID and the value contains
-        // metadata including the subject (group name).
-        let count = 0;
-        for (const jid in groups) {
-            if (Object.prototype.hasOwnProperty.call(groups, jid)) {
-                const groupInfo = groups[jid];
-                const name = (groupInfo?.subject || '').toLowerCase();
-                if (name) {
-                    groupMap.set(name, jid);
-                    count++;
-                }
-            }
+      const groups = await sock.groupFetchAllParticipating();
+      // groups is an object where each key is a JID and the value contains
+      // metadata including the subject (group name).
+      let count = 0;
+      for (const jid in groups) {
+        if (Object.prototype.hasOwnProperty.call(groups, jid)) {
+          const groupInfo = groups[jid];
+          const name = (groupInfo?.subject || "").toLowerCase();
+          if (name) {
+            groupMap.set(name, jid);
+            count++;
+          }
         }
-        logger.info(`Fetched ${count} groups`);
-        return groupMap;
+      }
+      logger.info(`Fetched ${count} groups`);
+      return groupMap;
     } catch (error) {
-        logger.error({err: error}, 'Error fetching groups:');
-        throw error;
+      logger.error({ err: error }, "Error fetching groups:");
+      throw error;
     }
 }
 

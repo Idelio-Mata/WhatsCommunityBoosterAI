@@ -36,70 +36,70 @@ const pendingReply = new Map();
  * @returns {Promise<import('@whiskeysockets/baileys').WASocket>} The connected socket.
  */
 async function connectWhatsApp() {
-    // 3.1 Load auth state
-    const { state, saveCreds } = await useMultiFileAuthState(config.SESSION_PATH);
+  // 3.1 Load auth state
+  const { state, saveCreds } = await useMultiFileAuthState(config.SESSION_PATH);
 
-    // 3.2 Fetch latest Baileys version
-    const { version } = await fetchLatestBaileysVersion();
+  // 3.2 Fetch latest Baileys version
+  const { version } = await fetchLatestBaileysVersion();
 
-    // 3.3 Create socket with silent logger
-    sock = makeWASocket({
-        version,
-        auth: state,
-        logger: {
-            // Baileys expects a pino logger; we provide a minimal silent one.
-            level: 'silent',
-            info: () => {},
-            error: () => {},
-            debug: () => {},
-            warn: () => {},
-        },
-    });
+  // 3.3 Create socket with silent logger direct on baileys
+  const pino = require("pino");
 
-    // 3.4 Save credentials on update
-    sock.ev.on('creds.update', saveCreds);
+  sock = makeWASocket({
+    version,
+    auth: state,
+    logger: pino({ level: "silent" }),
+  });
 
-    // 3.5 Connection updates handling
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
-        if (qr) {
-            // Show QR code in terminal
-            qrcode.generate(qr, { small: true });
-        }
-        if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            if (reason === DisconnectReason.loggedOut) {
-                logger.error('Logged out from WhatsApp. Delete the session folder to re‑login.');
-            } else {
-                logger.warn('Connection closed, reconnecting in 5 seconds...');
-                await delay(5000);
-                await connectWhatsApp();
-            }
-        } else if (connection === 'open') {
-            logger.info('WhatsApp connection opened');
-        }
-    });
+  // 3.4 Save credentials on update
+  sock.ev.on("creds.update", saveCreds);
 
-    // 3.6 Message upsert handling
-    sock.ev.on('messages.upsert', async (msgUpsert) => {
-        const { type, messages } = msgUpsert;
-        if (type !== 'notify') return;
-        for (const msg of messages) {
-            if (msg.key?.fromMe) continue; // skip own messages
-            const senderJid = msg.key?.remoteJid;
-            if (!senderJid) continue;
-            if (pendingReply.has(senderJid)) {
-                // Mark as replied in DB
-                await markReplied(senderJid);
-                pendingReply.delete(senderJid);
-                // Add contact to group (implementation defined in ./groups)
-                const contact = pendingReply.get(senderJid);
-                await addContactToGroup(senderJid);
-            }
-        }
-    });
+  // 3.5 Connection updates handling
+  sock.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect, qr } = update;
+    if (qr) {
+      // Show QR code in terminal
+      qrcode.generate(qr, { small: true });
+    }
+    if (connection === "close") {
+      const reason = lastDisconnect?.error?.output?.statusCode;
+      if (reason === DisconnectReason.loggedOut) {
+        logger.error(
+          "Logged out from WhatsApp. Delete the session folder to re‑login.",
+        );
+      } else {
+        logger.warn("Connection closed, reconnecting in 5 seconds...");
+        await delay(5000);
+        await connectWhatsApp();
+      }
+    } else if (connection === "open") {
+      logger.info('WhatsApp connection established');
+      const { fetchGroups } = require('./groups');
+      await fetchGroups(sock);
+      logger.info('Groups fetched successfully');
+    }
+  });
 
-    return sock;
+  // 3.6 Message upsert handling
+  sock.ev.on("messages.upsert", async (msgUpsert) => {
+    const { type, messages } = msgUpsert;
+    if (type !== "notify") return;
+    for (const msg of messages) {
+      if (msg.key?.fromMe) continue; // skip own messages
+      const senderJid = msg.key?.remoteJid;
+      if (!senderJid) continue;
+      if (pendingReply.has(senderJid)) {
+        // Mark as replied in DB
+        await markReplied(senderJid);
+        pendingReply.delete(senderJid);
+        // Add contact to group (implementation defined in ./groups)
+        const contact = pendingReply.get(senderJid);
+        await addContactToGroup(senderJid);
+      }
+    }
+  });
+
+  return sock;
 }
 
 /**

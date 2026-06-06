@@ -14,7 +14,6 @@ const config = require('./config/config');
 const { initDatabase } = require('./src/data/database');
 const { startDashboard } = require('./src/dashboard/server');
 const { connectWhatsApp } = require('./src/bot/whatsapp');
-const { fetchGroups } = require('./src/bot/groups');
 const { startScheduler } = require('./src/bot/scheduler');
 
 /**
@@ -39,10 +38,6 @@ async function main() {
   // Connect to WhatsApp
   const sock = await connectWhatsApp();
   logger.info('WhatsApp connection established');
-
-  // Fetch groups information
-  await fetchGroups(sock);
-  logger.info('Groups fetched successfully');
 
   // Start the scheduler
   startScheduler();
