@@ -21,7 +21,7 @@
 | `src/bot/groups.js` | Group management |
 | `src/bot/scheduler.js` | Queue + delays + daily limit |
 
-## Sprint 3 — Dashboard & Delivery ⬜
+## Sprint 3 — Dashboard & Delivery ✅
 **Goal:** Build the dashboard, entry point and deploy to VPS.
 
 | File | Description |
