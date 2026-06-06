@@ -68,3 +68,30 @@ Replace the local Excel file with a Google Sheets spreadsheet owned and managed 
 | `src/data/sheets.js` | Google Sheets API integration |
 | `src/data/contacts.js` | Updated to support Google Sheets as data source |
 | `docs/GOOGLE_SHEETS_SETUP.md` | Step-by-step guide to configure Google Sheets API |
+
+
+### v1.2.0 — Group Member Management ⬜
+
+**Problem:**
+
+The client has no way to remove inactive or unwanted members from their WhatsApp groups. Doing it manually one by one is time-consuming, especially when managing groups with hundreds of members. There is also no visibility into who is currently in each group.
+
+**Solution:**
+
+Add a group member management section to the dashboard. The client can view all current members of each group, remove them individually or in bulk, with the same anti-ban protection already used for additions — randomized delays between each removal action.
+
+**Benefits:**
+
+- ✅ Client can clean up groups without manual work
+- ✅ Same anti-ban protection as additions
+- ✅ Full visibility of group members
+- ✅ Bulk removal with filters — remove by date added, by status, or select manually
+
+**Scope:**
+
+| File | Description |
+|---|---|
+| `src/bot/groups.js` | Add removeContactFromGroup and bulkRemove functions |
+| `src/bot/scheduler.js` | Add removal queue with anti-ban delays |
+| `src/dashboard/server.js` | Add group members API routes |
+| `src/dashboard/server.js` | Add member management UI to dashboard |
