@@ -241,6 +241,84 @@ function getAllContacts(limit = 50) {
   return db.prepare(`SELECT * FROM contacts ORDER BY created_at DESC LIMIT ?`).all(limit);
 }
 
+/**
+ * Update a contact identified by phone with the provided fields.
+ * Only updates fields that are defined in the `fields` object.
+ * Valid fields: name, group_name, status.
+ * Status must be one of: pending, sent, replied, added, failed.
+ * Always updates the `updated_at` column to the current datetime.
+ * Returns the updated contact row.
+ * @param {string} phone - The contact identifier.
+ * @param {Object} fields - Object with optional keys: name, group_name, status.
+ * @returns {Object} Updated contact record.
+ */
+function updateContact(phone, fields) {
+  if (!phone) {
+    const err = new Error('Phone is required');
+    logger.error({ err }, 'updateContact: missing phone');
+    throw err;
+  }
+  const allowedStatus = ['pending', 'sent', 'replied', 'added', 'failed'];
+  const updates = [];
+  const values = [];
+  if (fields.name !== undefined) {
+    updates.push('name = ?');
+    values.push(fields.name);
+  }
+  if (fields.group_name !== undefined) {
+    updates.push('group_name = ?');
+    values.push(fields.group_name);
+  }
+  if (fields.status !== undefined) {
+    if (!allowedStatus.includes(fields.status)) {
+      const err = new Error('Invalid status value');
+      logger.error({ err }, 'updateContact: invalid status');
+      throw err;
+    }
+    updates.push('status = ?');
+    values.push(fields.status);
+  }
+  // always update updated_at
+  updates.push('updated_at = ?');
+  const now = new Date().toISOString();
+  values.push(now);
+  // add phone for WHERE clause
+  values.push(phone);
+
+  const setClause = updates.join(', ');
+  const stmt = db.prepare(`UPDATE contacts SET ${setClause} WHERE phone = ?`);
+  stmt.run(...values);
+  // return the updated row
+  return db.prepare('SELECT * FROM contacts WHERE phone = ?').get(phone);
+}
+
+/**
+ * Delete a contact and all related rows in messages and activity tables.
+ * The deletions are performed inside a transaction to ensure atomicity.
+ * Returns { deleted: true } on success.
+ * @param {string} phone - The contact identifier to delete.
+ * @returns {{deleted:boolean}}
+ */
+function deleteContact(phone) {
+  if (!phone) {
+    const err = new Error('Phone is required');
+    logger.error({ err }, 'deleteContact: missing phone');
+    throw err;
+  }
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM contacts WHERE phone = ?').run(phone);
+    db.prepare('DELETE FROM messages WHERE phone = ?').run(phone);
+    db.prepare('DELETE FROM activity WHERE phone = ?').run(phone);
+  });
+  try {
+    tx();
+  } catch (err) {
+    logger.error({ err }, 'Failed to delete contact');
+    throw err;
+  }
+  return { deleted: true };
+}
+
 module.exports = {
   initDatabase,
   upsertContacts,
@@ -254,4 +332,6 @@ module.exports = {
   getRecentActivity,
   getDashboardStats,
   getAllContacts,
+  updateContact,
+  deleteContact,
 };
