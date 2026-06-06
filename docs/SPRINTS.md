@@ -29,3 +29,42 @@
 | `src/dashboard/server.js` | Express API + HTML dashboard |
 | `index.js` | Entry point |
 | Deploy | Oracle Cloud Free Tier |
+
+
+
+
+
+
+---
+
+## Improvements & New Features
+
+These are enhancements added after the initial release, not part of the original sprint plan.
+
+---
+
+### v1.1.0 — Google Sheets Integration ⬜
+
+**Problem:**
+
+In the current implementation, the contacts file (`contacts.xlsx`) lives directly on the server. This creates a critical usability problem for the client: every time they want to add new contacts, they have to send the updated file to the developer, who then manually uploads it to the server. This dependency makes the client unable to operate independently, slows down the growth of their WhatsApp groups, and creates unnecessary back-and-forth communication.
+
+**Solution:**
+
+Replace the local Excel file with a Google Sheets spreadsheet owned and managed by the client. The bot connects to the Google Sheets API and automatically pulls the latest contacts every 30 minutes. The client simply opens their Google Sheet, adds new numbers, and the bot picks them up on the next sync cycle — no developer intervention required.
+
+**Benefits:**
+
+- ✅ Client is fully autonomous — no need to contact the developer to add contacts
+- ✅ Google Sheets is familiar — no new tools to learn
+- ✅ Changes are instant — client adds a number and it's picked up within 30 minutes
+- ✅ Access control — client can share the sheet with team members if needed
+- ✅ History — Google Sheets keeps a version history of all changes
+
+**Scope:**
+
+| File | Description |
+|---|---|
+| `src/data/sheets.js` | Google Sheets API integration |
+| `src/data/contacts.js` | Updated to support Google Sheets as data source |
+| `docs/GOOGLE_SHEETS_SETUP.md` | Step-by-step guide to configure Google Sheets API |
