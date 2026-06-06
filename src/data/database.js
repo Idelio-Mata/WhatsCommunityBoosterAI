@@ -79,8 +79,12 @@ function initDatabase() {
 function upsertContacts(contacts) {
   if (!Array.isArray(contacts) || contacts.length === 0) return;
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO contacts (phone, name, group_name, group_id, status, created_at, updated_at)
+    INSERT INTO contacts (phone, name, group_name, group_id, status, created_at, updated_at)
     VALUES (@phone, @name, @group_name, @group_id, @status, @created_at, @updated_at)
+    ON CONFLICT(phone) DO UPDATE SET
+      name = CASE WHEN contacts.name = '' OR contacts.name IS NULL THEN excluded.name ELSE contacts.name END,
+      group_name = CASE WHEN contacts.group_name = '' OR contacts.group_name IS NULL THEN excluded.group_name ELSE contacts.group_name END,
+      updated_at = excluded.updated_at
   `);
   const now = new Date().toISOString();
   const insert = db.transaction((list) => {
