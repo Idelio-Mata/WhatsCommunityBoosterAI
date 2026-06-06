@@ -10,7 +10,6 @@ const logger = require('../utils/logger');
 const config = require('../../config/config');
 const { markAdded } = require('../data/database');
 const { welcome, groupNotFound } = require('./messages');
-const { getSocket } = require('./whatsapp');
 
 /**
  * Map storing group name (lower‑case) → group JID.
@@ -26,7 +25,7 @@ const groupMap = new Map();
  * @async
  * @returns {Promise<Map<string, string>>} The populated group map.
  */
-async function fetchGroups() {
+async function fetchGroups(sock) {
     try {
         const sock = getSocket();
         const groups = await sock.groupFetchAllParticipating();
@@ -97,7 +96,7 @@ function resolveGroupId(groupName) {
  * @returns {Promise<boolean>} `true` on success, `false` otherwise.
  */
 async function addContactToGroup(contact) {
-    const sock = getSocket();
+    const sock = require('./whatsapp').getSocket();
     try {
         const groupId = resolveGroupId(contact.group_name);
         if (!groupId) {

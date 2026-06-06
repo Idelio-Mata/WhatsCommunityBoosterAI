@@ -37,11 +37,11 @@ async function main() {
   logger.info(`Dashboard started on port ${port}`);
 
   // Connect to WhatsApp
-  await connectWhatsApp();
+  const sock = await connectWhatsApp();
   logger.info('WhatsApp connection established');
 
   // Fetch groups information
-  await fetchGroups();
+  await fetchGroups(sock);
   logger.info('Groups fetched successfully');
 
   // Start the scheduler
